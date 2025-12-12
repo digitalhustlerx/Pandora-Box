@@ -4,21 +4,20 @@ import { ThemeProvider } from "../components/provider";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 export const metadata: Metadata = {
-  title: "Next.js Starter Kit - Launch Your SAAS",
-  description:
-    "A modern, full-stack Next.js starter kit with authentication, payments, and dashboard. Built with TypeScript, Tailwind CSS, and shadcn/ui.",
+  title: "Pandora's Box",
+  description: "Pandora's Box is a multi-model AI chat and coding assistant.",
   openGraph: {
-    title: "Next.js Starter Kit",
+    title: "Pandora's Box",
     description:
-      "A modern, full-stack Next.js starter kit with authentication, payments, and dashboard. Built with TypeScript, Tailwind CSS, and shadcn/ui.",
-    url: "nextstarter.xyz",
-    siteName: "Next.js Starter Kit",
+      "Pandora's Box is a multi-model AI chat and coding assistant.",
+    url: "pandorasbox.app",
+    siteName: "Pandora's Box",
     images: [
       {
         url: "https://jdj14ctwppwprnqu.public.blob.vercel-storage.com/nsk-w9fFwBBmLDLxrB896I4xqngTUEEovS.png",
         width: 1200,
         height: 630,
-        alt: "Next.js Starter Kit",
+        alt: "Pandora's Box",
       },
     ],
     locale: "en-US",

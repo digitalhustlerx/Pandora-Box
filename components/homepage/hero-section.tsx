@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
+import PublicHomeChat from "./public-home-chat";
 
 export default function HeroSection() {
   return (
@@ -9,11 +10,10 @@ export default function HeroSection() {
         <div className="relative text-center">
           <p className="text-3xl">🔥</p>
           <h1 className="mx-auto mt-12 max-w-xl text-balance text-5xl font-medium">
-            Nextjs Starter Kit
+            Pandora&apos;s Box
           </h1>
           <p className="text-muted-foreground mx-auto mb-6 mt-4 text-balance text-xl">
-            This powerful starter kit is designed to help you launch your SAAS
-            application quickly and efficiently.
+            One place to talk to the best models. Fast, clean, and built for builders.
           </p>
           <div className="flex flex-col items-center gap-2 *:w-full sm:flex-row sm:justify-center sm:*:w-auto">
             <Button asChild variant="default" size="sm">
@@ -22,15 +22,13 @@ export default function HeroSection() {
               </Link>
             </Button>
             <Button asChild variant="outline" size="sm">
-              <Link
-                href="https://github.com/michaelshimeles/nextjs-starter-kit"
-                target="_blank"
-                rel="noreferrer"
-              >
-                <span className="text-nowrap">Github</span>
+              <Link href="/pricing" prefetch={true}>
+                <span className="text-nowrap">Pricing</span>
               </Link>
             </Button>
           </div>
+
+          <PublicHomeChat />
         </div>
 
         <div className="relative mt-8 overflow-hidden rounded-3xl bg-black/10">

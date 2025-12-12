@@ -2,13 +2,24 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DEFAULT_MODEL_ID, MODEL_OPTIONS } from "@/lib/models";
 import { cn } from "@/lib/utils";
 import { useChat } from "@ai-sdk/react";
 import Markdown from "react-markdown";
+import { useState } from "react";
 
 export default function Chat() {
+  const [modelId, setModelId] = useState(DEFAULT_MODEL_ID);
   const { messages, input, handleInputChange, handleSubmit } = useChat({
     maxSteps: 10,
+    body: { model_id: modelId },
   });
 
   return (
@@ -55,6 +66,18 @@ export default function Chat() {
         onSubmit={handleSubmit}
       >
         <div className="flex flex-col gap-2 justify-center items-start mb-8 max-w-xl w-full border p-2 rounded-lg bg-white ">
+          <Select value={modelId} onValueChange={setModelId}>
+            <SelectTrigger size="sm" className="w-full justify-between">
+              <SelectValue placeholder="Select model" />
+            </SelectTrigger>
+            <SelectContent>
+              {MODEL_OPTIONS.map((model) => (
+                <SelectItem key={model.id} value={model.id}>
+                  {model.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Input
             className="w-full border-0 shadow-none !ring-transparent "
             value={input}
