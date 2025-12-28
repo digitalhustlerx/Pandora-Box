@@ -18,10 +18,10 @@ export default async function PaymentPage() {
       <div className="p-6 space-y-4">
         <div className="relative min-h-screen">
           {!subscriptionDetails.hasSubscription ||
-          subscriptionDetails.subscription?.status !== "active" ? (
+            subscriptionDetails.subscription?.status !== "active" ? (
             <>
               <div className="absolute inset-0 z-10 rounded-lg flex items-center justify-center">
-                <div className="bg-white dark:bg-gray-900 p-8 rounded-lg shadow-lg text-center max-w-md">
+                <div className="bg-[#0a0a0a] border border-zinc-800 p-8 rounded-lg shadow-2xl text-center max-w-md">
                   <h3 className="text-xl font-semibold mb-2">
                     Subscription Required
                   </h3>
@@ -30,7 +30,7 @@ export default async function PaymentPage() {
                     features.
                   </p>
                   <Link href="/pricing">
-                    <Button>Subscribe Now</Button>
+                    <Button className="w-full">Subscribe Now</Button>
                   </Link>
                 </div>
               </div>
@@ -108,14 +108,14 @@ export default async function PaymentPage() {
                   </div>
                 </div>
                 {subscriptionDetails.subscription.cancelAtPeriodEnd && (
-                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm text-yellow-800">
+                  <div className="p-4 bg-zinc-900/50 border border-zinc-800 rounded-lg">
+                    <p className="text-sm text-zinc-400">
                       Your subscription will cancel at the end of the current
                       billing period.
                     </p>
                   </div>
                 )}
-                <ManageSubscription />
+                <ManageSubscription provider={subscriptionDetails.subscription.provider} />
               </CardContent>
             </Card>
           )}

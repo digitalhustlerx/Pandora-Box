@@ -12,42 +12,35 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 
-// Utility function to safely parse dates
 function safeParseDate(value: string | Date | null | undefined): Date | null {
   if (!value) return null;
   if (value instanceof Date) return value;
   return new Date(value);
 }
 
-const polarClient = new Polar({
-  accessToken: process.env.POLAR_ACCESS_TOKEN,
-  server: "sandbox",
-});
+const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+const hasDatabase = !!db && !!process.env.DATABASE_URL;
+const hasGoogleOAuth =
+  !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET;
 
-export const auth = betterAuth({
-  trustedOrigins: [`${process.env.NEXT_PUBLIC_APP_URL}`],
-  allowedDevOrigins: [`${process.env.NEXT_PUBLIC_APP_URL}`],
-  cookieCache: {
-    enabled: true,
-    maxAge: 5 * 60, // Cache duration in seconds
-  },
-  database: drizzleAdapter(db, {
-    provider: "pg",
-    schema: {
-      user,
-      session,
-      account,
-      verification,
-      subscription,
-    },
-  }),
-  socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    },
-  },
-  plugins: [
+const hasPolarEnv =
+  hasDatabase &&
+  !!appUrl &&
+  !!process.env.POLAR_ACCESS_TOKEN &&
+  !!process.env.POLAR_WEBHOOK_SECRET &&
+  !!process.env.NEXT_PUBLIC_STARTER_TIER &&
+  !!process.env.NEXT_PUBLIC_STARTER_SLUG;
+
+const plugins = [nextCookies()];
+
+if (hasPolarEnv) {
+  const polarClient = new Polar({
+    accessToken: process.env.POLAR_ACCESS_TOKEN,
+    server: "sandbox",
+  });
+  const database = db!;
+
+  plugins.unshift(
     polar({
       client: polarClient,
       createCustomerOnSignUp: true,
@@ -55,35 +48,17 @@ export const auth = betterAuth({
         checkout({
           products: [
             {
-              productId:
-                process.env.NEXT_PUBLIC_STARTER_TIER ||
-                (() => {
-                  throw new Error(
-                    "NEXT_PUBLIC_STARTER_TIER environment variable is required",
-                  );
-                })(),
-              slug:
-                process.env.NEXT_PUBLIC_STARTER_SLUG ||
-                (() => {
-                  throw new Error(
-                    "NEXT_PUBLIC_STARTER_SLUG environment variable is required",
-                  );
-                })(),
+              productId: process.env.NEXT_PUBLIC_STARTER_TIER!,
+              slug: process.env.NEXT_PUBLIC_STARTER_SLUG!,
             },
           ],
-          successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/${process.env.POLAR_SUCCESS_URL}`,
+          successUrl: `${appUrl}/${process.env.POLAR_SUCCESS_URL ?? "success"}`,
           authenticatedUsersOnly: true,
         }),
         portal(),
         usage(),
         webhooks({
-          secret:
-            process.env.POLAR_WEBHOOK_SECRET ||
-            (() => {
-              throw new Error(
-                "POLAR_WEBHOOK_SECRET environment variable is required",
-              );
-            })(),
+          secret: process.env.POLAR_WEBHOOK_SECRET!,
           onPayload: async ({ data, type }) => {
             if (
               type === "subscription.created" ||
@@ -93,13 +68,8 @@ export const auth = betterAuth({
               type === "subscription.uncanceled" ||
               type === "subscription.updated"
             ) {
-              console.log("🎯 Processing subscription webhook:", type);
-              console.log("📦 Payload data:", JSON.stringify(data, null, 2));
-
               try {
-                // STEP 1: Extract user ID from customer data
                 const userId = data.customer?.externalId;
-                // STEP 2: Build subscription data
                 const subscriptionData = {
                   id: data.id,
                   createdAt: new Date(data.createdAt),
@@ -125,24 +95,14 @@ export const auth = betterAuth({
                     data.customerCancellationReason || null,
                   customerCancellationComment:
                     data.customerCancellationComment || null,
-                  metadata: data.metadata
-                    ? JSON.stringify(data.metadata)
-                    : null,
+                  metadata: data.metadata ? JSON.stringify(data.metadata) : null,
                   customFieldData: data.customFieldData
                     ? JSON.stringify(data.customFieldData)
                     : null,
                   userId: userId as string | null,
                 };
 
-                console.log("💾 Final subscription data:", {
-                  id: subscriptionData.id,
-                  status: subscriptionData.status,
-                  userId: subscriptionData.userId,
-                  amount: subscriptionData.amount,
-                });
-
-                // STEP 3: Use Drizzle's onConflictDoUpdate for proper upsert
-                await db
+                await database
                   .insert(subscription)
                   .values(subscriptionData)
                   .onConflictDoUpdate({
@@ -173,20 +133,54 @@ export const auth = betterAuth({
                       userId: subscriptionData.userId,
                     },
                   });
-
-                console.log("✅ Upserted subscription:", data.id);
               } catch (error) {
-                console.error(
-                  "💥 Error processing subscription webhook:",
-                  error,
-                );
-                // Don't throw - let webhook succeed to avoid retries
+                console.error("Error processing subscription webhook:", error);
               }
             }
           },
         }),
       ],
     }),
-    nextCookies(),
-  ],
+  );
+}
+
+const databaseConfig = hasDatabase
+  ? drizzleAdapter(db!, {
+      provider: "pg",
+      schema: {
+        user,
+        session,
+        account,
+        verification,
+        subscription,
+      },
+    })
+  : undefined;
+
+export const auth = betterAuth({
+  ...(process.env.BETTER_AUTH_SECRET
+    ? { secret: process.env.BETTER_AUTH_SECRET }
+    : {}),
+  ...(appUrl ? { baseURL: appUrl } : {}),
+  trustedOrigins: appUrl ? [appUrl] : [],
+  allowedDevOrigins: appUrl ? [appUrl] : [],
+  emailAndPassword: {
+    enabled: true,
+  },
+  cookieCache: {
+    enabled: true,
+    maxAge: 5 * 60,
+  },
+  ...(databaseConfig ? { database: databaseConfig } : {}),
+  ...(hasGoogleOAuth
+    ? {
+        socialProviders: {
+          google: {
+            clientId: process.env.GOOGLE_CLIENT_ID!,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+          },
+        },
+      }
+    : {}),
+  plugins,
 });

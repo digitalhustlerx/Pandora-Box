@@ -134,6 +134,13 @@ R2_UPLOAD_IMAGE_BUCKET_NAME="your-r2-bucket-name"
 # Polar.sh Pricing Tiers
 NEXT_PUBLIC_STARTER_TIER="your-starter-product-id"
 NEXT_PUBLIC_STARTER_SLUG="your-starter-slug"
+
+# Paystack (optional alternative billing provider)
+PAYSTACK_SECRET_KEY="your-paystack-secret-key"
+NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY="your-paystack-public-key"
+PAYSTACK_STARTER_AMOUNT_KOBO=100000
+PAYSTACK_CURRENCY=NGN
+PAYSTACK_CALLBACK_URL="http://localhost:3000/success"
 ```
 
 4. **Database Setup**
@@ -153,6 +160,21 @@ npx drizzle-kit push
 - Create products for your pricing tiers
 - Set up webhook endpoints for subscription events
 - Configure your pricing structure
+
+### Google OAuth Setup (optional)
+- Add authorized redirect URI:
+  - `https://<your-domain>/api/auth/callback/google`
+- For local dev:
+  - `http://localhost:3000/api/auth/callback/google`
+
+### Paystack Setup (optional)
+- Dashboard -> Settings -> API Keys & Webhooks:
+  - Copy `PAYSTACK_SECRET_KEY` and `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY`
+  - Set the webhook URL to `https://<your-domain>/api/paystack/webhook`
+- Amount and currency:
+  - Set `PAYSTACK_STARTER_AMOUNT_KOBO` (kobo) and `PAYSTACK_CURRENCY` (e.g. `NGN`)
+- Callback:
+  - Set `PAYSTACK_CALLBACK_URL` to `https://<your-domain>/success` (Paystack appends `?reference=...`)
 
 7. **Start Development Server**
 ```bash

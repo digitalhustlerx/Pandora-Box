@@ -3,7 +3,15 @@ import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 
-export default function ManageSubscription() {
+export default function ManageSubscription({
+  provider,
+}: {
+  provider?: "polar" | "paystack";
+}) {
+  if (provider && provider !== "polar") {
+    return null;
+  }
+
   return (
     <Button
       variant="outline"

@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { authClient } from "@/lib/auth-client";
+import { getPreferredBillingProvider } from "@/lib/billing";
 import { Check } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -65,14 +66,36 @@ export default function PricingTable({
     }
 
     try {
-      await authClient.checkout({
-        products: [productId],
-        slug: slug,
-      });
+      const provider = getPreferredBillingProvider();
+      if (provider === "polar") {
+        if (!productId || !slug) {
+          toast.error("Polar billing is not configured yet");
+          return;
+        }
+        await authClient.checkout({
+          products: [productId],
+          slug: slug,
+        });
+        return;
+      }
+
+      if (provider === "paystack") {
+        const res = await fetch("/api/paystack/initialize", { method: "POST" });
+        const data = (await res.json()) as
+          | { authorizationUrl: string }
+          | { error: string };
+        if (!res.ok || "error" in data) {
+          toast.error("error" in data ? data.error : "Paystack init failed");
+          return;
+        }
+        window.location.href = data.authorizationUrl;
+        return;
+      }
+
+      toast.error("Billing is not configured yet");
     } catch (error) {
       console.error("Checkout failed:", error);
-      // TODO: Add user-facing error notification
-      toast.error("Oops, something went wrong");
+      toast.error("Checkout failed. Please try again.");
     }
   };
 
@@ -85,17 +108,15 @@ export default function PricingTable({
     }
   };
 
-  const STARTER_TIER = process.env.NEXT_PUBLIC_STARTER_TIER;
-  const STARTER_SLUG = process.env.NEXT_PUBLIC_STARTER_SLUG;
-
-  if (!STARTER_TIER || !STARTER_SLUG) {
-    throw new Error("Missing required environment variables for Starter tier");
-  }
+  const STARTER_TIER = process.env.NEXT_PUBLIC_STARTER_TIER ?? "";
+  const STARTER_SLUG = process.env.NEXT_PUBLIC_STARTER_SLUG ?? "";
+  const isBillingConfigured = !!getPreferredBillingProvider();
 
   const isCurrentPlan = (tierProductId: string) => {
     return (
       subscriptionDetails.hasSubscription &&
-      subscriptionDetails.subscription?.productId === tierProductId &&
+      (subscriptionDetails.subscription?.productId === tierProductId ||
+        subscriptionDetails.subscription?.productId === "paystack:starter") &&
       subscriptionDetails.subscription?.status === "active"
     );
   };
@@ -117,6 +138,11 @@ export default function PricingTable({
         <p className="text-xl text-muted-foreground">
           Test out this starter kit using this fake subscription.
         </p>
+        {!isBillingConfigured && (
+          <p className="text-sm text-muted-foreground mt-2">
+            Billing is not configured yet. Pricing will be available soon.
+          </p>
+        )}
       </div>
 
       <div className="grid md:grid-cols-2 gap-8 max-w-4xl w-full">
@@ -159,7 +185,11 @@ export default function PricingTable({
             </div>
           </CardContent>
           <CardFooter>
-            {isCurrentPlan(STARTER_TIER) ? (
+            {!isBillingConfigured ? (
+              <Button className="w-full" disabled>
+                Coming Soon
+              </Button>
+            ) : isCurrentPlan(STARTER_TIER) ? (
               <div className="w-full space-y-2">
                 <Button
                   className="w-full"

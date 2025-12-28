@@ -83,3 +83,20 @@ export const subscription = pgTable("subscription", {
   customFieldData: text("customFieldData"), // JSON string
   userId: text("userId").references(() => user.id),
 });
+
+// Paystack payment records (simple time-based access)
+export const paystackSubscription = pgTable("paystack_subscription", {
+  id: text("id").primaryKey(), // Paystack reference
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  paidAt: timestamp("paidAt").notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  amount: integer("amount").notNull(),
+  currency: text("currency").notNull(),
+  status: text("status").notNull(), // active|expired
+  customerEmail: text("customerEmail").notNull(),
+  productId: text("productId").notNull(),
+  metadata: text("metadata"), // JSON string
+  userId: text("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+});
